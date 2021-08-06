@@ -94,8 +94,10 @@ app.layout = html.Div([
         {'label': 'ActivePower', 'value': 'ACTP'},
         {'label': 'ApparentPower', 'value': 'APPP'}
     ],
+
     value='CURR',
     labelStyle={'display': 'block'}
+
     ),style={"padding": "10px",'width': 1000}
     ),
 	
