@@ -40,7 +40,8 @@ myfile.close()
 df.loc[8,["ApparentPower"]] = 200		#manual modification to see if logics work
 df["Time"] = pd.to_datetime(df["Time"])
 
-time_gap_between_readings_in_secs = 10
+#time_gap_between_readings_in_secs = 10
+time_gap_between_readings_in_secs = pd.Timedelta(df["Time"][1]-df["Time"][0]).seconds
 
 n_readings_in_a_min = int(60/time_gap_between_readings_in_secs)
 tm = [i for i in range(0,len(df)*time_gap_between_readings_in_secs,time_gap_between_readings_in_secs)]
@@ -74,46 +75,21 @@ curr_mn = round(df["Current"].mean(),4)
 curr_stdev = round(df["Current"].std(),4)
 load_variation = "Mean Current is "+str(curr_mn)+" and Standard Deviation of Current is "+str(curr_stdev)
 
+Power_Factor_msg = "Power Factor is "+str(round(df["PowerFactor"][0],4))
+Act_Power_msg = "Active Power is "+str(round(df["ActivePower"][0],2))
 #breakpoint()
 
-app = dash.Dash(__name__,external_stylesheets=[dbc.themes.BOOTSTRAP])
+app = dash.Dash(__name__,external_stylesheets=[dbc.themes.CYBORG])	#BOOTSTRAP
 
 app.layout = html.Div([
     html.H1(children='Energy Visualisation'),	
-    dcc.Tabs([
-        dcc.Tab(label='Tab one Graphical', children=[
-    #html.H1(children='Graphical'),
 
-    #html.Div(children='''
-    #    Dash: A web application framework for Python.
-    #'''),
-    html.Div(
-    dcc.RadioItems(id='Radio-graphselect1',
-    options=[
-        {'label': 'Current', 'value': 'CURR'},
-        {'label': 'ActivePower', 'value': 'ACTP'},
-        {'label': 'ApparentPower', 'value': 'APPP'}
-    ],
-
-    value='CURR',
-    labelStyle={'display': 'block'}
-
-    ),style={"padding": "10px",'width': 1000}
-    ),
-	
-    dcc.Graph(
-        id='curr_actp_appp-graph_time'
-    ),
-    
-    dcc.Graph(
-        id='curr_actp_appp-graph_hist'
-    )	
-    ]),
-
-    dcc.Tab(label='Tab two Measures', children=[html.Div([
+    html.Div([
             #html.H1('Measures')
         #])
-    dbc.Row([dbc.Col(html.Div([
+    dbc.Row([dbc.Col([
+    dbc.Row([dbc.Col(
+    html.Div([
     html.Label("Move the slider to know mean apparent power for each month"),
     dcc.Slider(
         id='my-minute-slider',
@@ -130,46 +106,104 @@ app.layout = html.Div([
     ),
 
     ]),
-    width={'size': 6, 'offset': 3}, style={'border': '1px solid'}
+    width={'size': 11, 'offset': 0}, style={'border': '1px solid'}
     ),
-    
     ]),
-    ],style={'marginBottom': 50, 'marginTop': 25,'textAlign': 'center'}),
+
+    dbc.Row([dbc.Col(
+    html.Img(src=app.get_asset_url('images_Power.png'),style={'height':200, 'width':200}),
+    width={'size': 3, 'offset': 0}
+    ),
+
+    dbc.Col([
+    dbc.Row([dbc.Col(
     
-    dbc.Row([dbc.Col(	
     dbc.Alert([
     html.Div(
             children=VI_msg,
-            id="alert-auto",
+            id="peak-VI",
             #is_open=True,
-            style={'textAlign': 'center'}
+            style={'color':'red','marginTop': 10,'textAlign': 'center'}
         ),
-    ]), 
-    	#html.Label(load_variation) 
-    	#]),#style={'marginBottom': 50, 'marginTop': 25,'textAlign': 'center'}),
-    width={'size': 6, 'offset': 3},align="center" 
-    )]),
-
-    dbc.Row([dbc.Col(	
+    ])  
+    ,width={'size': 7, 'offset': 0}
+    )
+    ]),
+    dbc.Row([dbc.Col(
     dbc.Alert([
     html.Div(
             children=load_variation,
-            id="alert-auto2",
+            id="loadvar",
             #is_open=True,
-            style={'textAlign': 'center'}
+            style={'color':'red','textAlign': 'center'}
         ),
-    ]), 
-    #html.Label(load_variation) 
-    #]),#style={'marginBottom': 50, 'marginTop': 25,'textAlign': 'center'}),
-    width={'size': 6, 'offset': 3},align="center" 
-    )]),
+    ]),width={'size': 7, 'offset': 0}
+    )])
+    ]),
+    ]),
+
+
+    dbc.Row([dbc.Col(
+    html.Img(src=app.get_asset_url('PowerFactor_CroppedIMG.jpg'),style={'height':200, 'width':200}),
+    width={'size': 3, 'offset': 0}
+    ),
+
+    dbc.Col([
+    dbc.Row([dbc.Col(
     
-    #dcc.Graph(figure=fig_gauge_peakVI,
-    #    id='peakVI_gauge'
-    #),
- 	
-    ])
-    ])
+    dbc.Alert([
+    html.Div(
+            children=Power_Factor_msg,
+            id="PowFactor",
+            #is_open=True,
+            style={'color':'red','marginTop': 10,'textAlign': 'center'}
+        ),
+    ])  
+    ,width={'size': 7, 'offset': 0}
+    )
+    ]),
+    dbc.Row([dbc.Col(
+    dbc.Alert([
+    html.Div(
+            children=Act_Power_msg,
+            id="ActPower",
+            #is_open=True,
+            style={'color':'red','textAlign': 'center'}
+        ),
+    ]),width={'size': 7, 'offset': 0}
+    )])
+    ]),
+    ]),
+
+
+    ]),
+
+    dbc.Col([html.Div(
+    dcc.RadioItems(id='Radio-graphselect1',
+    options=[
+        {'label': 'Current', 'value': 'CURR'},
+        {'label': 'ActivePower', 'value': 'ACTP'},
+        {'label': 'ApparentPower', 'value': 'APPP'}
+    ],
+
+    value='CURR',
+    labelStyle={'display': 'block'}
+
+    ),#style={"padding": "10px",'width': 1000}
+    ),
+	
+    dcc.Graph(
+        id='curr_actp_appp-graph_time'
+    ),
+    
+    dcc.Graph(
+        id='curr_actp_appp-graph_hist'
+    ),	
+    ],width={'size': 6, 'offset': 0}),	
+
+    ]),
+    ],),#style={'marginBottom': 50, 'marginTop': 25,'textAlign': 'center'}),
+    
 ])
 
 #style={'width': '50%','padding-left':'25%', 'padding-right':'25%'}
