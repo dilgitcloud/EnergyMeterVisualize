@@ -47,9 +47,9 @@ n_readings_in_a_min = int(60/time_gap_between_readings_in_secs)
 tm = [i for i in range(0,len(df)*time_gap_between_readings_in_secs,time_gap_between_readings_in_secs)]
 #print(tm)
 #breakpoint()
-fig_current_timewise = px.scatter(df, x=df["Time"], y=df["Current"],title="Current vs Time")
-fig_actp_timewise = px.scatter(df, x=df["Time"], y=df["ActivePower"],title="ActivePower vs Time")
-fig_appp_timewise = px.scatter(df, x=df["Time"], y=df["ApparentPower"],title="ApparentPower vs Time")
+fig_current_timewise = px.bar(df, x=df["Time"], y=df["Current"],title="Current vs Time")
+fig_actp_timewise = px.bar(df, x=df["Time"], y=df["ActivePower"],title="ActivePower vs Time")
+fig_appp_timewise = px.bar(df, x=df["Time"], y=df["ApparentPower"],title="ApparentPower vs Time")
 
 fig_current_hist = px.histogram(df, x="Current",title="Current Histogram")
 fig_actp_hist = px.histogram(df, x="ActivePower",title="ActivePower Histogram")
@@ -111,7 +111,7 @@ app.layout = html.Div([
     ]),
 
     dbc.Row([dbc.Col(
-    html.Img(src=app.get_asset_url('images_Power.png'),style={'height':200, 'width':200}),
+    html.Img(src=app.get_asset_url('images_Power.png'),style={'height':300, 'width':200}),
     width={'size': 3, 'offset': 0}
     ),
 
@@ -140,6 +140,10 @@ app.layout = html.Div([
     ]),width={'size': 7, 'offset': 0}
     )])
     ]),
+
+    dcc.Graph(
+        id='pie_app_power'
+    ),
     ]),
 
 
@@ -171,8 +175,10 @@ app.layout = html.Div([
             style={'color':'red','textAlign': 'center'}
         ),
     ]),width={'size': 7, 'offset': 0}
-    )])
+    )]),
+    
     ]),
+
     ]),
 
 
@@ -186,7 +192,7 @@ app.layout = html.Div([
         {'label': 'ApparentPower', 'value': 'APPP'}
     ],
 
-    value='CURR',
+    value='APPP',
     labelStyle={'display': 'block'}
 
     ),#style={"padding": "10px",'width': 1000}
@@ -211,16 +217,36 @@ app.layout = html.Div([
 @app.callback(
     Output('curr_actp_appp-graph_time', 'figure'),
     Output('curr_actp_appp-graph_hist', 'figure'),
-    Output('peakVI_gauge','figure'),	
+    Output('peakVI_gauge','figure'),
+    Output('pie_app_power','figure'),	
     #Output('slider-show-selection','children'),	
     Input('Radio-graphselect1', 'value'),
     Input('my-minute-slider', 'value'))
 
 def update_graph(choose_which_graph,minute_count):
     #breakpoint()	
+
+    #Calculation for pie Graph###################################
+    mn1 = []
+    data_of_first_minute = df["ApparentPower"].iloc[n_readings_in_a_min*0:n_readings_in_a_min*1]	
+    mn1.append(round(data_of_first_minute.mean(),2))	
+
+    data_of_second_minute = df["ApparentPower"].iloc[n_readings_in_a_min*1:n_readings_in_a_min*2]	
+    mn1.append(round(data_of_second_minute.mean(),2))
+
+    data_of_third_minute = df["ApparentPower"].iloc[n_readings_in_a_min*2:n_readings_in_a_min*3]	
+    mn1.append(round(data_of_third_minute.mean(),2))
+
+    fig_pie = px.pie(mn1,values = mn1,names=["First month","Second month","Third month"],title="Usage across months",height=300,width=300)
+    #####################################################	
+
+
     data_of_the_minute = df["ApparentPower"].iloc[n_readings_in_a_min*minute_count:n_readings_in_a_min*(minute_count+1)]	
     mn = round(data_of_the_minute.mean(),2)
-    
+    time_for_this_data = df["Time"].iloc[n_readings_in_a_min*minute_count:n_readings_in_a_min*(minute_count+1)]
+    #breakpoint()
+    fig_data_for_this_minute = px.line(data_of_the_minute, x=time_for_this_data, y=data_of_the_minute,labels=dict(x="This month", y="Apparent Power Used"),title="ApparentPower Usage variation for this duration")	
+
     fig_gauge_peakVI = go.Figure(go.Indicator(
     mode = "gauge+number",
     value = mn,
@@ -229,11 +255,27 @@ def update_graph(choose_which_graph,minute_count):
 
     #fig_gauge_peakVI.add_trace(go.Indicator(value = mn)) 	
     if	choose_which_graph=='CURR':
-        return fig_current_timewise, fig_current_hist,fig_gauge_peakVI#"Mean Apparent power in " + str(minute_count)+ "th minute  is "+str(mn)
-    elif choose_which_graph=='ACTP': 	
-        return fig_actp_timewise, fig_actp_hist,fig_gauge_peakVI#"Mean Apparent power in " + str(minute_count)+ "th minute  is "+str(mn)
+
+        data_of_the_minute = df["Current"].iloc[n_readings_in_a_min*minute_count:n_readings_in_a_min*(minute_count+1)]	
+        mn = round(data_of_the_minute.mean(),2)
+        time_for_this_data = df["Time"].iloc[n_readings_in_a_min*minute_count:n_readings_in_a_min*(minute_count+1)]
+        #breakpoint()
+        fig_data_for_this_minute = px.line(data_of_the_minute, x=time_for_this_data, y=data_of_the_minute,labels=dict(x="This month", y="Current Used"),title="Current Usage variation for this duration")
+
+        return fig_current_timewise, fig_data_for_this_minute, fig_gauge_peakVI,fig_pie#fig_current_hist, "Mean Apparent power in " + str(minute_count)+ "th minute  is "+str(mn)
+
+    elif choose_which_graph=='ACTP':
+
+        data_of_the_minute = df["ActivePower"].iloc[n_readings_in_a_min*minute_count:n_readings_in_a_min*(minute_count+1)]	
+        mn = round(data_of_the_minute.mean(),2)
+        time_for_this_data = df["Time"].iloc[n_readings_in_a_min*minute_count:n_readings_in_a_min*(minute_count+1)]
+        #breakpoint()
+        fig_data_for_this_minute = px.line(data_of_the_minute, x=time_for_this_data, y=data_of_the_minute,labels=dict(x="This month", y="Active Power Used"),title="ActivePower Usage variation for this duration")
+ 	
+        return fig_actp_timewise,fig_data_for_this_minute, fig_gauge_peakVI,fig_pie#fig_actp_hist, "Mean Apparent power in " + str(minute_count)+ "th minute  is "+str(mn)
+
     elif choose_which_graph=='APPP': 	
-        return fig_appp_timewise, fig_appp_hist,fig_gauge_peakVI#"Mean Apparent power in " + str(minute_count)+ "th minute  is "+str(mn)
+        return fig_appp_timewise,fig_data_for_this_minute, fig_gauge_peakVI,fig_pie#fig_appp_hist, "Mean Apparent power in " + str(minute_count)+ "th minute  is "+str(mn)
 
 if __name__ == '__main__':
     app.run_server(debug=True)
